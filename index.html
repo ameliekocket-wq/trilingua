@@ -6,91 +6,15 @@
 <title>Trilingua</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f2f7fb;
-  text-align: center;
-  color: #333;
-}
-
-header {
-  background: #cfe9f7;
-  padding: 25px;
-  border-bottom-left-radius: 25px;
-  border-bottom-right-radius: 25px;
-}
-
-h1 { margin: 0; font-size: 28px; }
-.motto { font-size: 14px; color: #555; }
-
-.stats {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.progressbar {
-  width: 80%;
-  max-width: 400px;
-  height: 10px;
-  background: #ddd;
-  margin: 10px auto;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.progress {
-  height: 100%;
-  width: 0%;
-  background: #ffb3c6;
-  transition: 0.3s;
-}
-
-.container { padding: 20px; }
-
-.card {
-  background: white;
-  margin: 15px auto;
-  padding: 20px;
-  border-radius: 20px;
-  width: 85%;
-  max-width: 420px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  cursor: pointer;
-}
-
-.nor { background: #e3f2fb; }
-.spa { background: #fce4ec; }
-.eng { background: #eeeeee; }
-
-button {
-  margin: 8px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 15px;
-  background: #cfe9f7;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-input {
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  margin-top: 10px;
-}
-
-.levelup {
-  position: fixed;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 25px;
-  border-radius: 20px;
-  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
-  display: none;
-}
+body { margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#f2f7fb; text-align:center; }
+header { background:#cfe9f7; padding:25px; border-bottom-left-radius:25px; border-bottom-right-radius:25px; }
+.stats { font-size:14px; margin-top:10px; }
+.container { padding:20px; }
+.card { background:white; margin:15px auto; padding:20px; border-radius:20px; width:85%; max-width:420px; box-shadow:0 4px 15px rgba(0,0,0,0.05);}
+button { margin:8px; padding:10px 16px; border:none; border-radius:15px; background:#cfe9f7; cursor:pointer; }
+.progressbar { width:80%; max-width:400px; height:10px; background:#ddd; margin:10px auto; border-radius:10px; overflow:hidden;}
+.progress { height:100%; width:0%; background:#ffb3c6; transition:0.3s;}
+.repeat { color:#ff6b81; font-size:13px; margin-bottom:5px;}
 </style>
 </head>
 
@@ -98,87 +22,106 @@ input {
 
 <header>
 <h1>Trilingua</h1>
-<div class="motto">Drei Sprachen. Ein Flow.</div>
 <div class="stats">
-🔥 Streak: <span id="streak">0</span> |
-🎯 Mission: <span id="mission">0</span>/3 |
 ⭐ XP: <span id="xp">0</span> |
 🏆 Level: <span id="level">1</span>
 </div>
-
-<div class="progressbar">
-  <div class="progress" id="progress"></div>
-</div>
+<div class="progressbar"><div class="progress" id="progress"></div></div>
 </header>
 
 <div class="container" id="menu">
-<div class="card nor" onclick="startLesson('nor')">🇳🇴 Norwegisch</div>
-<div class="card spa" onclick="startLesson('spa')">🇪🇸 Spanisch</div>
-<div class="card eng" onclick="startLesson('eng')">🇬🇧 Englisch</div>
+<div class="card" onclick="startLesson('nor')">🇳🇴 Norwegisch</div>
+<div class="card" onclick="startLesson('spa')">🇪🇸 Spanisch</div>
+<div class="card" onclick="startLesson('eng')">🇬🇧 Englisch</div>
 </div>
 
 <div class="container" id="lesson" style="display:none;"></div>
 
-<div class="levelup" id="levelupBox">
-<h2>🎉 Level Up!</h2>
-<p>Du bist jetzt Level <span id="newLevel"></span>!</p>
-<button onclick="closeLevelUp()">Weiter</button>
-</div>
-
 <script>
 let xp = parseInt(localStorage.getItem("xp")) || 0;
 let level = parseInt(localStorage.getItem("level")) || 1;
-let streak = parseInt(localStorage.getItem("streak")) || 0;
-let mission = parseInt(localStorage.getItem("mission")) || 0;
-let lastDate = localStorage.getItem("date");
-
-let today = new Date().toDateString();
-if(lastDate !== today){
-  mission = 0;
-  localStorage.setItem("mission",0);
-  localStorage.setItem("date",today);
-}
-
-updateUI();
 
 const questions = {
-nor: [
-{q:"Was bedeutet 'Hei'?", correct:"Hallo", options:["Hallo","Danke","Tschüss","Bitte"]},
-{q:"Übersetze: 'Jeg lærer norsk.'", correct:"Ich lerne Norwegisch", type:"text"}
+nor:[
+{q:"Was bedeutet 'Hei'?",correct:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
+{q:"Übersetze: 'Jeg lærer norsk.'",correct:"Ich lerne Norwegisch",type:"text"},
+{q:"Was bedeutet 'Takk'?",correct:"Danke",options:["Danke","Hallo","Bitte","Nein"]},
+{q:"Übersetze: 'God morgen'",correct:"Guten Morgen",type:"text"},
+{q:"Was bedeutet 'Ha det'?",correct:"Tschüss",options:["Bitte","Tschüss","Danke","Ja"]}
 ],
-spa: [
-{q:"Was bedeutet 'Gracias'?", correct:"Danke", options:["Bitte","Danke","Hallo","Tschüss"]},
-{q:"Übersetze: 'Estoy aprendiendo español.'", correct:"Ich lerne Spanisch", type:"text"}
+spa:[
+{q:"Was bedeutet 'Gracias'?",correct:"Danke",options:["Hallo","Danke","Bitte","Nein"]},
+{q:"Übersetze: 'Buenos días'",correct:"Guten Morgen",type:"text"},
+{q:"Was bedeutet 'Hola'?",correct:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
+{q:"Übersetze: 'Estoy aprendiendo español'",correct:"Ich lerne Spanisch",type:"text"},
+{q:"Was bedeutet 'Adiós'?",correct:"Tschüss",options:["Hallo","Bitte","Tschüss","Nein"]}
 ],
-eng: [
-{q:"Was bedeutet 'Apple'?", correct:"Apfel", options:["Birne","Apfel","Banane","Traube"]},
-{q:"Übersetze: 'I practice daily.'", correct:"Ich übe täglich", type:"text"}
+eng:[
+{q:"Was bedeutet 'Apple'?",correct:"Apfel",options:["Apfel","Birne","Banane","Traube"]},
+{q:"Übersetze: 'Good morning'",correct:"Guten Morgen",type:"text"},
+{q:"Was bedeutet 'Thank you'?",correct:"Danke",options:["Bitte","Danke","Hallo","Nein"]},
+{q:"Übersetze: 'I learn English'",correct:"Ich lerne Englisch",type:"text"},
+{q:"Was bedeutet 'Goodbye'?",correct:"Tschüss",options:["Bitte","Danke","Tschüss","Hallo"]}
 ]
 };
 
+let lessonQueue=[];
+let wrongQueue=[];
+let currentQuestion=null;
+let questionCount=0;
+
 function startLesson(lang){
+lessonQueue=[...questions[lang]];
+wrongQueue=[];
+questionCount=0;
 document.getElementById("menu").style.display="none";
-let lesson = document.getElementById("lesson");
-lesson.style.display="block";
+document.getElementById("lesson").style.display="block";
+nextQuestion();
+}
 
-let random = questions[lang][Math.floor(Math.random()*questions[lang].length)];
+function nextQuestion(){
+if(questionCount>=5){
+if(wrongQueue.length>0){
+lessonQueue.push(...wrongQueue);
+wrongQueue=[];
+}
+else{
+document.getElementById("lesson").innerHTML=
+`<div class="card"><h2>🎉 Lektion abgeschlossen!</h2>
+<button onclick="goHome()">Zurück zum Menü</button></div>`;
+return;
+}
+}
 
-if(random.type==="text"){
-lesson.innerHTML = `
-<div class="card">
-<h3>${random.q}</h3>
+currentQuestion=lessonQueue.shift();
+questionCount++;
+
+renderQuestion(currentQuestion);
+}
+
+function renderQuestion(q){
+let repeatMark = q.wasWrong ? "<div class='repeat'>🔁 Wiederholung</div>" : "";
+if(q.type==="text"){
+document.getElementById("lesson").innerHTML=
+`<div class="card">
+${repeatMark}
+<h3>${q.q}</h3>
 <input id="textAnswer" placeholder="Deine Antwort...">
 <br>
-<button onclick="checkText('${random.correct}')">Prüfen</button>
-<button onclick="goBack()">Zurück</button>
+<button onclick="checkText()">Prüfen</button>
 </div>`;
 }else{
-let shuffled = random.options.sort(()=>0.5-Math.random());
-lesson.innerHTML = `<div class="card"><h3>${random.q}</h3>`;
+let shuffled=[...q.options].sort(()=>0.5-Math.random());
+let buttons="";
 shuffled.forEach(opt=>{
-lesson.innerHTML+=`<button onclick="checkAnswer('${opt}','${random.correct}')">${opt}</button>`;
+buttons+=`<button onclick="checkAnswer('${opt}')">${opt}</button>`;
 });
-lesson.innerHTML+=`<br><button onclick="goBack()">Zurück</button></div>`;
+document.getElementById("lesson").innerHTML=
+`<div class="card">
+${repeatMark}
+<h3>${q.q}</h3>
+${buttons}
+</div>`;
 }
 }
 
@@ -192,69 +135,53 @@ if(a[i]!==b[i]) diff++;
 return diff<=2;
 }
 
-function checkText(correct){
+function checkText(){
 let input=document.getElementById("textAnswer").value;
-if(similarity(input,correct)){
+if(similarity(input,currentQuestion.correct)){
 gainXP(10);
-alert("Richtig 🎉");
+nextQuestion();
 }else{
-alert("Nicht ganz 😅");
+currentQuestion.wasWrong=true;
+wrongQueue.push(currentQuestion);
+nextQuestion();
 }
 }
 
-function checkAnswer(answer,correct){
-if(answer===correct){
+function checkAnswer(answer){
+if(answer===currentQuestion.correct){
 gainXP(5);
-alert("Richtig 🎉");
+nextQuestion();
 }else{
-alert("Leider falsch 🙈");
+currentQuestion.wasWrong=true;
+wrongQueue.push(currentQuestion);
+nextQuestion();
 }
 }
 
 function gainXP(amount){
 xp+=amount;
-mission++;
 localStorage.setItem("xp",xp);
-localStorage.setItem("mission",mission);
-
-if(mission>=3){
-streak++;
-localStorage.setItem("streak",streak);
-mission=0;
-localStorage.setItem("mission",0);
-}
-
 let newLevel=Math.floor(xp/50)+1;
 if(newLevel>level){
 level=newLevel;
 localStorage.setItem("level",level);
-showLevelUp();
+alert("🎉 Level Up!");
 }
-
 updateUI();
 }
 
 function updateUI(){
 document.getElementById("xp").innerText=xp;
 document.getElementById("level").innerText=level;
-document.getElementById("streak").innerText=streak;
-document.getElementById("mission").innerText=mission;
 document.getElementById("progress").style.width=(xp%50)*2+"%";
 }
 
-function showLevelUp(){
-document.getElementById("newLevel").innerText=level;
-document.getElementById("levelupBox").style.display="block";
-}
-
-function closeLevelUp(){
-document.getElementById("levelupBox").style.display="none";
-}
-
-function goBack(){
+function goHome(){
 document.getElementById("lesson").style.display="none";
 document.getElementById("menu").style.display="block";
 }
+
+updateUI();
 </script>
 
 </body>
