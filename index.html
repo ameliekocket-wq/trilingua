@@ -6,75 +6,113 @@
 <title>Trilingua</title>
 
 <style>
-body { margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:#f2f7fb; text-align:center; }
-header { background:#cfe9f7; padding:25px; border-bottom-left-radius:25px; border-bottom-right-radius:25px; }
-.stats { font-size:14px; margin-top:10px; }
-.container { padding:20px; }
-.card { background:white; margin:15px auto; padding:20px; border-radius:20px; width:85%; max-width:420px; box-shadow:0 4px 15px rgba(0,0,0,0.05);}
-button { margin:8px; padding:10px 16px; border:none; border-radius:15px; background:#cfe9f7; cursor:pointer; }
-.progressbar { width:80%; max-width:400px; height:10px; background:#ddd; margin:10px auto; border-radius:10px; overflow:hidden;}
-.progress { height:100%; width:0%; background:#ffb3c6; transition:0.3s;}
-.repeat { color:#ff6b81; font-size:13px; margin-bottom:5px;}
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#f2f7fb;
+text-align:center;
+color:#333;
+}
+
+header{
+background:#cfe9f7;
+padding:25px;
+border-bottom-left-radius:25px;
+border-bottom-right-radius:25px;
+}
+
+button{
+padding:12px 18px;
+border:none;
+border-radius:15px;
+margin:8px;
+font-size:16px;
+cursor:pointer;
+}
+
+.lang-btn{width:220px;}
+.no{background:#d7eefb;}
+.es{background:#f6d6df;}
+.en{background:#e6e6e6;}
+
+.card{
+background:white;
+margin:25px auto;
+padding:20px;
+width:90%;
+max-width:400px;
+border-radius:20px;
+box-shadow:0 5px 15px rgba(0,0,0,0.08);
+}
+
+input{
+padding:10px;
+border-radius:10px;
+border:1px solid #ccc;
+width:80%;
+margin-top:10px;
+}
+
+.repeat{
+font-size:12px;
+color:#e67e22;
+margin-top:6px;
+}
 </style>
 </head>
-
 <body>
 
 <header>
 <h1>Trilingua</h1>
-<div class="stats">
-⭐ XP: <span id="xp">0</span> |
-🏆 Level: <span id="level">1</span>
-</div>
-<div class="progressbar"><div class="progress" id="progress"></div></div>
+<p>Drei Sprachen. Ein Flow.</p>
+🔥 Streak: <span id="streak">0</span>
 </header>
 
-<div class="container" id="menu">
-<div class="card" onclick="startLesson('nor')">🇳🇴 Norwegisch</div>
-<div class="card" onclick="startLesson('spa')">🇪🇸 Spanisch</div>
-<div class="card" onclick="startLesson('eng')">🇬🇧 Englisch</div>
+<div id="home">
+<br>
+<button class="lang-btn no" onclick="startLesson('no')">🇳🇴 Norwegisch</button><br>
+<button class="lang-btn es" onclick="startLesson('es')">🇪🇸 Spanisch</button><br>
+<button class="lang-btn en" onclick="startLesson('en')">🇬🇧 Englisch</button>
 </div>
 
-<div class="container" id="lesson" style="display:none;"></div>
+<div id="lesson" style="display:none;"></div>
 
 <script>
-let xp = parseInt(localStorage.getItem("xp")) || 0;
-let level = parseInt(localStorage.getItem("level")) || 1;
 
-const questions = {
-nor:[
-{q:"Was bedeutet 'Hei'?",correct:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
-{q:"Übersetze: 'Jeg lærer norsk.'",correct:"Ich lerne Norwegisch",type:"text"},
-{q:"Was bedeutet 'Takk'?",correct:"Danke",options:["Danke","Hallo","Bitte","Nein"]},
-{q:"Übersetze: 'God morgen'",correct:"Guten Morgen",type:"text"},
-{q:"Was bedeutet 'Ha det'?",correct:"Tschüss",options:["Bitte","Tschüss","Danke","Ja"]}
+let currentQueue=[];
+let wrongQueue=[];
+let questionCount=0;
+let currentQuestion=null;
+
+const questions={
+no:[
+{q:"Was bedeutet 'Hei'?",a:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
+{q:"Übersetze: Jeg lærer norsk",a:"Ich lerne Norwegisch",type:"text"},
+{q:"Was bedeutet 'Takk'?",a:"Danke",options:["Danke","Hallo","Bitte","Nein"]},
+{q:"Übersetze: God morgen",a:"Guten Morgen",type:"text"},
+{q:"Was bedeutet 'Ha det'?",a:"Tschüss",options:["Hallo","Bitte","Tschüss","Danke"]}
 ],
-spa:[
-{q:"Was bedeutet 'Gracias'?",correct:"Danke",options:["Hallo","Danke","Bitte","Nein"]},
-{q:"Übersetze: 'Buenos días'",correct:"Guten Morgen",type:"text"},
-{q:"Was bedeutet 'Hola'?",correct:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
-{q:"Übersetze: 'Estoy aprendiendo español'",correct:"Ich lerne Spanisch",type:"text"},
-{q:"Was bedeutet 'Adiós'?",correct:"Tschüss",options:["Hallo","Bitte","Tschüss","Nein"]}
+es:[
+{q:"Was bedeutet 'Gracias'?",a:"Danke",options:["Hallo","Danke","Bitte","Nein"]},
+{q:"Übersetze: Buenos días",a:"Guten Morgen",type:"text"},
+{q:"Was bedeutet 'Hola'?",a:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
+{q:"Übersetze: Estoy aprendiendo español",a:"Ich lerne Spanisch",type:"text"},
+{q:"Was bedeutet 'Adiós'?",a:"Tschüss",options:["Hallo","Bitte","Tschüss","Nein"]}
 ],
-eng:[
-{q:"Was bedeutet 'Apple'?",correct:"Apfel",options:["Apfel","Birne","Banane","Traube"]},
-{q:"Übersetze: 'Good morning'",correct:"Guten Morgen",type:"text"},
-{q:"Was bedeutet 'Thank you'?",correct:"Danke",options:["Bitte","Danke","Hallo","Nein"]},
-{q:"Übersetze: 'I learn English'",correct:"Ich lerne Englisch",type:"text"},
-{q:"Was bedeutet 'Goodbye'?",correct:"Tschüss",options:["Bitte","Danke","Tschüss","Hallo"]}
+en:[
+{q:"Was bedeutet 'Apple'?",a:"Apfel",options:["Apfel","Birne","Banane","Traube"]},
+{q:"Übersetze: Good morning",a:"Guten Morgen",type:"text"},
+{q:"Was bedeutet 'Goodbye'?",a:"Tschüss",options:["Hallo","Danke","Tschüss","Bitte"]},
+{q:"Übersetze: I learn English",a:"Ich lerne Englisch",type:"text"},
+{q:"Was bedeutet 'Please'?",a:"Bitte",options:["Danke","Bitte","Hallo","Nein"]}
 ]
 };
 
-let lessonQueue=[];
-let wrongQueue=[];
-let currentQuestion=null;
-let questionCount=0;
-
 function startLesson(lang){
-lessonQueue=[...questions[lang]];
+currentQueue=[...questions[lang]];
 wrongQueue=[];
 questionCount=0;
-document.getElementById("menu").style.display="none";
+document.getElementById("home").style.display="none";
 document.getElementById("lesson").style.display="block";
 nextQuestion();
 }
@@ -82,107 +120,97 @@ nextQuestion();
 function nextQuestion(){
 if(questionCount>=5){
 if(wrongQueue.length>0){
-lessonQueue.push(...wrongQueue);
+currentQueue.push(...wrongQueue);
 wrongQueue=[];
 }
 else{
 document.getElementById("lesson").innerHTML=
-`<div class="card"><h2>🎉 Lektion abgeschlossen!</h2>
-<button onclick="goHome()">Zurück zum Menü</button></div>`;
+`<div class="card">
+<h2>🎉 Lektion abgeschlossen!</h2>
+<button onclick="goHome()">Zurück zum Menü</button>
+</div>`;
 return;
 }
 }
 
-currentQuestion=lessonQueue.shift();
+currentQuestion=currentQueue.shift();
 questionCount++;
 
 renderQuestion(currentQuestion);
 }
 
 function renderQuestion(q){
-let repeatMark = q.wasWrong ? "<div class='repeat'>🔁 Wiederholung</div>" : "";
+let repeatMark=q.wrong?'<div class="repeat">🔁 Wiederholung</div>':"";
+
 if(q.type==="text"){
 document.getElementById("lesson").innerHTML=
 `<div class="card">
-${repeatMark}
 <h3>${q.q}</h3>
-<input id="textAnswer" placeholder="Deine Antwort...">
+${repeatMark}
+<input id="answerInput">
 <br>
-<button onclick="checkText()">Prüfen</button>
+<button onclick="checkText()">Antwort prüfen</button>
+<button onclick="goHome()">Beenden</button>
 </div>`;
-}else{
-let shuffled=[...q.options].sort(()=>0.5-Math.random());
-let buttons="";
-shuffled.forEach(opt=>{
-buttons+=`<button onclick="checkAnswer('${opt}')">${opt}</button>`;
-});
+}
+else{
+let buttons=q.options.map(opt=>
+`<button onclick="checkOption('${opt}')">${opt}</button>`
+).join("<br>");
+
 document.getElementById("lesson").innerHTML=
 `<div class="card">
-${repeatMark}
 <h3>${q.q}</h3>
+${repeatMark}
 ${buttons}
+<br>
+<button onclick="goHome()">Beenden</button>
 </div>`;
 }
 }
 
-function similarity(a,b){
-a=a.toLowerCase();
-b=b.toLowerCase();
+function normalize(str){
+return str.toLowerCase().trim();
+}
+
+function similar(a,b){
+a=normalize(a);
+b=normalize(b);
+if(a===b) return true;
+if(Math.abs(a.length-b.length)>1) return false;
 let diff=0;
-for(let i=0;i<Math.max(a.length,b.length);i++){
+for(let i=0;i<Math.min(a.length,b.length);i++){
 if(a[i]!==b[i]) diff++;
 }
-return diff<=2;
+return diff<=1;
+}
+
+function checkOption(answer){
+if(answer===currentQuestion.a){
+setTimeout(nextQuestion,600);
+}else{
+currentQuestion.wrong=true;
+wrongQueue.push(currentQuestion);
+setTimeout(nextQuestion,600);
+}
 }
 
 function checkText(){
-let input=document.getElementById("textAnswer").value;
-if(similarity(input,currentQuestion.correct)){
-gainXP(10);
-nextQuestion();
+let input=document.getElementById("answerInput").value;
+if(similar(input,currentQuestion.a)){
+setTimeout(nextQuestion,600);
 }else{
-currentQuestion.wasWrong=true;
+currentQuestion.wrong=true;
 wrongQueue.push(currentQuestion);
-nextQuestion();
+setTimeout(nextQuestion,600);
 }
-}
-
-function checkAnswer(answer){
-if(answer===currentQuestion.correct){
-gainXP(5);
-nextQuestion();
-}else{
-currentQuestion.wasWrong=true;
-wrongQueue.push(currentQuestion);
-nextQuestion();
-}
-}
-
-function gainXP(amount){
-xp+=amount;
-localStorage.setItem("xp",xp);
-let newLevel=Math.floor(xp/50)+1;
-if(newLevel>level){
-level=newLevel;
-localStorage.setItem("level",level);
-alert("🎉 Level Up!");
-}
-updateUI();
-}
-
-function updateUI(){
-document.getElementById("xp").innerText=xp;
-document.getElementById("level").innerText=level;
-document.getElementById("progress").style.width=(xp%50)*2+"%";
 }
 
 function goHome(){
 document.getElementById("lesson").style.display="none";
-document.getElementById("menu").style.display="block";
+document.getElementById("home").style.display="block";
 }
 
-updateUI();
 </script>
-
 </body>
 </html>
