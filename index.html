@@ -8,9 +8,10 @@
 <style>
 body{
     margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
     background:#f2f7fb;
     text-align:center;
+    color:#333;
 }
 
 header{
@@ -20,36 +21,72 @@ header{
     border-bottom-right-radius:25px;
 }
 
+h1{margin:0;}
+
 button{
-    padding:12px 20px;
+    padding:12px 18px;
     margin:8px;
     border:none;
-    border-radius:12px;
+    border-radius:15px;
     font-size:16px;
     cursor:pointer;
+    transition:0.2s;
 }
 
-.langBtn{width:250px;}
+.langBtn{width:200px;}
+
+.map{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-top:20px;
+}
+
+.level{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    font-size:18px;
+    margin:20px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.locked{
+    background:#ddd;
+    color:#888;
+}
+
+.unlocked{
+    background:#6ec5ff;
+    color:white;
+}
+
+.completed{
+    background:#4caf50;
+    color:white;
+}
 
 .card{
     background:white;
     padding:20px;
     margin:20px auto;
+    border-radius:20px;
     width:90%;
     max-width:400px;
-    border-radius:15px;
     box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
-.repeat{
-    color:#ff7a00;
-    font-size:14px;
+input{
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    width:80%;
 }
-
-.correct{background:#c8f7c5;}
-.wrong{background:#ffd6d6;}
-
-#lesson{display:none;}
 </style>
 </head>
 
@@ -57,156 +94,173 @@ button{
 
 <header>
 <h1>Trilingua</h1>
-<p>🔥 XP: <span id="xp">0</span></p>
+<p>XP: <span id="xp">0</span></p>
 </header>
 
 <div id="menu">
-<h2>Sprache wählen</h2>
-<button class="langBtn" onclick="startLesson('nor')">🇳🇴 Norwegisch</button><br>
-<button class="langBtn" onclick="startLesson('spa')">🇪🇸 Spanisch</button><br>
-<button class="langBtn" onclick="startLesson('eng')">🇬🇧 Englisch</button>
+<button class="langBtn" onclick="openMap('nor')">🇳🇴 Norwegisch</button>
+<button class="langBtn" onclick="openMap('spa')">🇪🇸 Spanisch</button>
+<button class="langBtn" onclick="openMap('eng')">🇬🇧 Englisch</button>
 </div>
 
-<div id="lesson"></div>
+<div id="map" style="display:none;"></div>
+
+<div id="lesson" style="display:none;"></div>
 
 <script>
 
-let XP = 0;
+let XP = parseInt(localStorage.getItem("xp")) || 0;
+document.getElementById("xp").innerText = XP;
+
+let currentLang = "";
+let currentLevel = 1;
 let queue = [];
-let repeatQueue = [];
-let currentQuestion = null;
+let wrongQueue = [];
+let index = 0;
 
-const questions = {
+const levelUnlockXP = [0, 20, 50, 90];
 
-nor:[
-{q:"Was heißt 'vin'?",a:"Wein",options:["Wein","Bier","Milch","Wasser"]},
-{q:"Was heißt 'søster'?",a:"Schwester",options:["Mutter","Schwester","Tochter","Tante"]},
-{q:"Was heißt 'vann'?",a:"Wasser",options:["Saft","Wasser","Milch","Wein"]},
-{q:"Was heißt 'brød'?",a:"Brot",options:["Käse","Fisch","Brot","Fleisch"]},
-{q:"Was heißt 'hvorfor'?",a:"warum",options:["wann","warum","wo","wer"]},
-{q:"Übersetze: Jeg lærer norsk",a:"Ich lerne Norwegisch",type:"text"},
-{q:"Was heißt 'regner'?",a:"es regnet",options:["es schneit","es regnet","Wind","Sonne"]},
-{q:"Was heißt 'jobb'?",a:"Arbeit",options:["Schule","Arbeit","Freund","Haus"]},
-{q:"Was heißt 'katt'?",a:"Katze",options:["Hund","Vogel","Katze","Pferd"]},
-{q:"Was heißt 'min'?",a:"mein",options:["mein","dein","sein","ihr"]}
+const data = {
+nor: [
+[
+{q:"Was heißt 'takk'?",a:"danke",o:["danke","bitte","hallo"]},
+{q:"Was heißt 'brød'?",a:"brot",o:["brot","milch","wein"]},
+{q:"Übersetze: jeg",a:"ich",type:"text"},
+{q:"Was heißt 'mor'?",a:"mutter",o:["vater","mutter","schwester"]},
+{q:"Was heißt 'ost'?",a:"käse",o:["käse","brot","pizza"]}
 ],
-
-spa:[
-{q:"Yo ____ (hablar)",a:"hablé",type:"text"},
-{q:"Nosotros ____ (comer)",a:"comimos",type:"text"},
-{q:"Was heißt 'rojo'?",a:"rot",options:["blau","rot","grün","gelb"]},
-{q:"Was heißt 'zapatos'?",a:"Schuhe",options:["Hemd","Schuhe","Hose","Jacke"]},
-{q:"Él ____ (vivir)",a:"vivió",type:"text"},
-{q:"Was heißt 'familia'?",a:"Familie",options:["Freunde","Familie","Schule","Stadt"]},
-{q:"Was heißt 'ayer'?",a:"gestern",options:["heute","morgen","gestern","jetzt"]},
-{q:"Tú ____ (bailar)",a:"bailaste",type:"text"},
-{q:"Was heißt 'negro'?",a:"schwarz",options:["weiß","schwarz","rot","pink"]},
-{q:"Was heißt 'comida'?",a:"Essen",options:["Trinken","Essen","Haus","Stuhl"]}
-],
-
-eng:[
-{q:"What does 'although' mean?",a:"obwohl",options:["weil","obwohl","aber","wenn"]},
-{q:"Choose correct: She ____ to school yesterday.",a:"went",options:["go","went","gone","going"]},
-{q:"What does 'nevertheless' mean?",a:"trotzdem",options:["trotzdem","niemals","immer","fast"]},
-{q:"Translate: I have already finished.",a:"Ich habe bereits fertiggemacht",type:"text"},
-{q:"Choose correct: If I ____ more time, I would travel.",a:"had",options:["have","had","will have","having"]},
-{q:"What does 'achievement' mean?",a:"Erfolg",options:["Fehler","Erfolg","Versuch","Problem"]},
-{q:"Choose correct: She has been waiting for two hours.",a:"Present Perfect Progressive",options:["Simple Past","Future","Present Perfect Progressive","Past Perfect"]},
-{q:"Translate: He didn't tell the truth.",a:"Er hat nicht die Wahrheit gesagt",type:"text"},
-{q:"What does 'environment' mean?",a:"Umwelt",options:["Welt","Umwelt","Ort","Region"]},
-{q:"Choose correct: They were watching TV.",a:"Past Progressive",options:["Simple Past","Past Progressive","Future","Present"]}
+[
+{q:"Was heißt 'venn'?",a:"freund",o:["freund","opa","oma"]},
+{q:"Übersetze: far",a:"vater",type:"text"},
+{q:"Was heißt 'vann'?",a:"wasser",o:["wasser","wein","bier"]},
+{q:"Was heißt 'hvor'?",a:"wo",o:["wo","wann","warum"]},
+{q:"Was heißt 'dyr'?",a:"teuer",o:["billig","teuer","neu"]}
 ]
-
+],
+spa: [
+[
+{q:"Was heißt 'rojo'?",a:"rot",o:["rot","blau","grün"]},
+{q:"Übersetze: casa",a:"haus",type:"text"},
+{q:"Was heißt 'perro'?",a:"hund",o:["katze","hund","vogel"]},
+{q:"Was heißt 'escuela'?",a:"schule",o:["schule","arbeit","markt"]},
+{q:"Was heißt 'negro'?",a:"schwarz",o:["weiß","schwarz","gelb"]}
+],
+[
+{q:"Übersetze: madre",a:"mutter",type:"text"},
+{q:"Was heißt 'azul'?",a:"blau",o:["blau","rot","pink"]},
+{q:"Was heißt 'pantalones'?",a:"hose",o:["jacke","hose","schuhe"]},
+{q:"Was heißt 'zapatos'?",a:"schuhe",o:["schuhe","socken","hut"]},
+{q:"Was heißt 'hermano'?",a:"bruder",o:["bruder","schwester","freund"]}
+]
+],
+eng: [
+[
+{q:"Was heißt 'dog'?",a:"hund",o:["hund","katze","maus"]},
+{q:"Übersetze: house",a:"haus",type:"text"},
+{q:"Was heißt 'blue'?",a:"blau",o:["blau","rot","gelb"]},
+{q:"Was heißt 'school'?",a:"schule",o:["schule","arbeit","markt"]},
+{q:"Was heißt 'mother'?",a:"mutter",o:["mutter","tante","oma"]}
+],
+[
+{q:"Übersetze: father",a:"vater",type:"text"},
+{q:"Was heißt 'green'?",a:"grün",o:["grün","orange","pink"]},
+{q:"Was heißt 'shirt'?",a:"hemd",o:["hose","hemd","jacke"]},
+{q:"Was heißt 'shoes'?",a:"schuhe",o:["schuhe","hut","socken"]},
+{q:"Was heißt 'friend'?",a:"freund",o:["opa","freund","arzt"]}
+]
+]
 };
 
-function startLesson(lang){
-    queue = shuffle([...questions[lang]]);
-    repeatQueue = [];
-    document.getElementById("menu").style.display="none";
-    document.getElementById("lesson").style.display="block";
-    nextQuestion();
+function openMap(lang){
+currentLang = lang;
+document.getElementById("menu").style.display="none";
+let mapDiv = document.getElementById("map");
+mapDiv.style.display="block";
+mapDiv.innerHTML="<h2>Level auswählen</h2><div class='map'></div><button onclick='goHome()'>Zurück</button>";
+let container = mapDiv.querySelector(".map");
+
+for(let i=0;i<data[lang].length;i++){
+let levelDiv=document.createElement("div");
+levelDiv.classList.add("level");
+
+if(XP>=levelUnlockXP[i]){
+levelDiv.classList.add("unlocked");
+levelDiv.innerText="Level "+(i+1);
+levelDiv.onclick=()=>startLesson(i);
+}else{
+levelDiv.classList.add("locked");
+levelDiv.innerText="🔒";
+}
+
+container.appendChild(levelDiv);
+}
+}
+
+function startLesson(level){
+currentLevel=level;
+queue=[...data[currentLang][level]];
+wrongQueue=[];
+index=0;
+document.getElementById("map").style.display="none";
+document.getElementById("lesson").style.display="block";
+nextQuestion();
 }
 
 function nextQuestion(){
-    if(queue.length===0){
-        if(repeatQueue.length>0){
-            queue = shuffle([...repeatQueue]);
-            repeatQueue=[];
-        }else{
-            document.getElementById("lesson").innerHTML =
-            "<div class='card'><h2>🎉 Lektion fertig!</h2><button onclick='goHome()'>Zurück</button></div>";
-            return;
-        }
-    }
-
-    currentQuestion = queue.shift();
-    renderQuestion(currentQuestion);
+if(index>=queue.length){
+if(wrongQueue.length>0){
+queue=[...wrongQueue];
+wrongQueue=[];
+index=0;
+}else{
+XP+=10;
+localStorage.setItem("xp",XP);
+document.getElementById("xp").innerText=XP;
+document.getElementById("lesson").innerHTML="<div class='card'><h2>🎉 Level geschafft!</h2><button onclick='goHome()'>Zurück zum Menü</button></div>";
+return;
+}
 }
 
-function renderQuestion(q){
-    let repeatMark = q.repeat ? "<div class='repeat'>⚠ Wiederholung</div>" : "";
-
-    if(q.type==="text"){
-        document.getElementById("lesson").innerHTML=
-        `<div class="card">
-        ${repeatMark}
-        <h3>${q.q}</h3>
-        <input id="answer" placeholder="Antwort..."><br><br>
-        <button onclick="checkText()">Antwort prüfen</button><br>
-        <button onclick="goHome()">Menü</button>
-        </div>`;
-    }else{
-        let optionsHTML="";
-        q.options.forEach(opt=>{
-            optionsHTML+=`<button onclick="checkMC('${opt}')">${opt}</button><br>`;
-        });
-
-        document.getElementById("lesson").innerHTML=
-        `<div class="card">
-        ${repeatMark}
-        <h3>${q.q}</h3>
-        ${optionsHTML}
-        <br><button onclick="goHome()">Menü</button>
-        </div>`;
-    }
+render(queue[index]);
+index++;
 }
 
-function checkMC(choice){
-    if(choice===currentQuestion.a){
-        XP+=10;
-        document.getElementById("xp").innerText=XP;
-    }else{
-        currentQuestion.repeat=true;
-        repeatQueue.push(currentQuestion);
-    }
-    setTimeout(nextQuestion,800);
+function render(q){
+let lesson=document.getElementById("lesson");
+let html="<div class='card'><h3>"+q.q+"</h3>";
+
+if(q.type==="text"){
+html+="<input id='answer'><br><button onclick='checkText(\""+q.a+"\")'>OK</button>";
+}else{
+q.o.forEach(opt=>{
+html+="<button onclick='checkOption(\""+opt+"\",\""+q.a+"\")'>"+opt+"</button><br>";
+});
 }
 
-function checkText(){
-    let input=document.getElementById("answer").value.trim().toLowerCase();
-    if(input===currentQuestion.a.toLowerCase()){
-        XP+=15;
-        document.getElementById("xp").innerText=XP;
-    }else{
-        currentQuestion.repeat=true;
-        repeatQueue.push(currentQuestion);
-    }
-    setTimeout(nextQuestion,800);
+html+="<br><button onclick='goHome()'>Zurück</button></div>";
+lesson.innerHTML=html;
+}
+
+function checkOption(opt,correct){
+if(opt.toLowerCase()!==correct.toLowerCase()){
+wrongQueue.push(queue[index-1]);
+}
+setTimeout(nextQuestion,500);
+}
+
+function checkText(correct){
+let val=document.getElementById("answer").value.toLowerCase().trim();
+if(val!==correct.toLowerCase()){
+wrongQueue.push(queue[index-1]);
+}
+setTimeout(nextQuestion,500);
 }
 
 function goHome(){
-    document.getElementById("lesson").style.display="none";
-    document.getElementById("menu").style.display="block";
+document.getElementById("lesson").style.display="none";
+document.getElementById("map").style.display="none";
+document.getElementById("menu").style.display="block";
 }
-
-function shuffle(array){
-    for(let i=array.length-1;i>0;i--){
-        let j=Math.floor(Math.random()*(i+1));
-        [array[i],array[j]]=[array[j],array[i]];
-    }
-    return array;
-}
-
 </script>
 
 </body>
