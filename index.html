@@ -23,8 +23,28 @@ header {
 
 h1 { margin: 0; font-size: 28px; }
 .motto { font-size: 14px; color: #555; }
-.streak { margin-top: 10px; font-size: 15px; }
-.mission { font-size: 14px; margin-top: 5px; }
+
+.stats {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.progressbar {
+  width: 80%;
+  max-width: 400px;
+  height: 10px;
+  background: #ddd;
+  margin: 10px auto;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  width: 0%;
+  background: #ffb3c6;
+  transition: 0.3s;
+}
 
 .container { padding: 20px; }
 
@@ -37,10 +57,7 @@ h1 { margin: 0; font-size: 28px; }
   max-width: 420px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.05);
   cursor: pointer;
-  transition: transform 0.2s;
 }
-
-.card:hover { transform: scale(1.03); }
 
 .nor { background: #e3f2fb; }
 .spa { background: #fce4ec; }
@@ -56,13 +73,23 @@ button {
   cursor: pointer;
 }
 
-button:hover { opacity: 0.8; }
+input {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+}
 
-.back {
-  margin-top: 15px;
-  font-size: 13px;
-  color: #666;
-  cursor: pointer;
+.levelup {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+  display: none;
 }
 </style>
 </head>
@@ -72,8 +99,16 @@ button:hover { opacity: 0.8; }
 <header>
 <h1>Trilingua</h1>
 <div class="motto">Drei Sprachen. Ein Flow.</div>
-<div class="streak">🔥 Streak: <span id="streak">0</span></div>
-<div class="mission">🎯 Daily Mission: <span id="mission">0</span>/3</div>
+<div class="stats">
+🔥 Streak: <span id="streak">0</span> |
+🎯 Mission: <span id="mission">0</span>/3 |
+⭐ XP: <span id="xp">0</span> |
+🏆 Level: <span id="level">1</span>
+</div>
+
+<div class="progressbar">
+  <div class="progress" id="progress"></div>
+</div>
 </header>
 
 <div class="container" id="menu">
@@ -84,85 +119,142 @@ button:hover { opacity: 0.8; }
 
 <div class="container" id="lesson" style="display:none;"></div>
 
-<script>
+<div class="levelup" id="levelupBox">
+<h2>🎉 Level Up!</h2>
+<p>Du bist jetzt Level <span id="newLevel"></span>!</p>
+<button onclick="closeLevelUp()">Weiter</button>
+</div>
 
-let streak = localStorage.getItem("streak") || 0;
-let mission = localStorage.getItem("mission") || 0;
+<script>
+let xp = parseInt(localStorage.getItem("xp")) || 0;
+let level = parseInt(localStorage.getItem("level")) || 1;
+let streak = parseInt(localStorage.getItem("streak")) || 0;
+let mission = parseInt(localStorage.getItem("mission")) || 0;
 let lastDate = localStorage.getItem("date");
 
 let today = new Date().toDateString();
-
 if(lastDate !== today){
   mission = 0;
-  localStorage.setItem("mission", 0);
-  localStorage.setItem("date", today);
+  localStorage.setItem("mission",0);
+  localStorage.setItem("date",today);
 }
 
-document.getElementById("streak").innerText = streak;
-document.getElementById("mission").innerText = mission;
+updateUI();
 
 const questions = {
-  nor: [
-    {q:"Was bedeutet 'Hei'?", a:"Hallo"},
-    {q:"Was bedeutet 'Hvordan har du det?'", a:"Wie geht es dir?"},
-    {q:"Was bedeutet 'Jeg lærer norsk hver dag.'", a:"Ich lerne jeden Tag Norwegisch."}
-  ],
-  spa: [
-    {q:"Was bedeutet 'Gracias'?", a:"Danke"},
-    {q:"Was bedeutet '¿Cómo estás?'", a:"Wie geht es dir?"},
-    {q:"Was bedeutet 'Estoy aprendiendo español.'", a:"Ich lerne Spanisch."}
-  ],
-  eng: [
-    {q:"Was bedeutet 'Apple'?", a:"Apfel"},
-    {q:"Was bedeutet 'How are you?'", a:"Wie geht es dir?"},
-    {q:"Was bedeutet 'I practice English daily.'", a:"Ich übe täglich Englisch."}
-  ]
+nor: [
+{q:"Was bedeutet 'Hei'?", correct:"Hallo", options:["Hallo","Danke","Tschüss","Bitte"]},
+{q:"Übersetze: 'Jeg lærer norsk.'", correct:"Ich lerne Norwegisch", type:"text"}
+],
+spa: [
+{q:"Was bedeutet 'Gracias'?", correct:"Danke", options:["Bitte","Danke","Hallo","Tschüss"]},
+{q:"Übersetze: 'Estoy aprendiendo español.'", correct:"Ich lerne Spanisch", type:"text"}
+],
+eng: [
+{q:"Was bedeutet 'Apple'?", correct:"Apfel", options:["Birne","Apfel","Banane","Traube"]},
+{q:"Übersetze: 'I practice daily.'", correct:"Ich übe täglich", type:"text"}
+]
 };
 
 function startLesson(lang){
-  document.getElementById("menu").style.display="none";
-  let lesson = document.getElementById("lesson");
-  lesson.style.display="block";
+document.getElementById("menu").style.display="none";
+let lesson = document.getElementById("lesson");
+lesson.style.display="block";
 
-  let random = questions[lang][Math.floor(Math.random()*3)];
+let random = questions[lang][Math.floor(Math.random()*questions[lang].length)];
 
-  lesson.innerHTML = `
-    <div class="card">
-      <h3>${random.q}</h3>
-      <button onclick="checkAnswer('${random.a}','${random.a}')">${random.a}</button>
-      <button onclick="checkAnswer('Falsch','${random.a}')">Andere Antwort</button>
-      <div class="back" onclick="goBack()">← Zurück</div>
-    </div>
-  `;
+if(random.type==="text"){
+lesson.innerHTML = `
+<div class="card">
+<h3>${random.q}</h3>
+<input id="textAnswer" placeholder="Deine Antwort...">
+<br>
+<button onclick="checkText('${random.correct}')">Prüfen</button>
+<button onclick="goBack()">Zurück</button>
+</div>`;
+}else{
+let shuffled = random.options.sort(()=>0.5-Math.random());
+lesson.innerHTML = `<div class="card"><h3>${random.q}</h3>`;
+shuffled.forEach(opt=>{
+lesson.innerHTML+=`<button onclick="checkAnswer('${opt}','${random.correct}')">${opt}</button>`;
+});
+lesson.innerHTML+=`<br><button onclick="goBack()">Zurück</button></div>`;
+}
 }
 
-function checkAnswer(answer, correct){
-  if(answer===correct){
-    mission++;
-    localStorage.setItem("mission", mission);
-    document.getElementById("mission").innerText = mission;
+function similarity(a,b){
+a=a.toLowerCase();
+b=b.toLowerCase();
+let diff=0;
+for(let i=0;i<Math.max(a.length,b.length);i++){
+if(a[i]!==b[i]) diff++;
+}
+return diff<=2;
+}
 
-    if(mission>=3){
-      streak++;
-      localStorage.setItem("streak", streak);
-      document.getElementById("streak").innerText = streak;
-      alert("🎉 Daily Mission geschafft! Streak erhöht!");
-      mission=0;
-      localStorage.setItem("mission", 0);
-      document.getElementById("mission").innerText = mission;
-    } else {
-      alert("Richtig! 🎉");
-    }
-  } else {
-    alert("Leider falsch 🙈");
-  }
+function checkText(correct){
+let input=document.getElementById("textAnswer").value;
+if(similarity(input,correct)){
+gainXP(10);
+alert("Richtig 🎉");
+}else{
+alert("Nicht ganz 😅");
+}
+}
+
+function checkAnswer(answer,correct){
+if(answer===correct){
+gainXP(5);
+alert("Richtig 🎉");
+}else{
+alert("Leider falsch 🙈");
+}
+}
+
+function gainXP(amount){
+xp+=amount;
+mission++;
+localStorage.setItem("xp",xp);
+localStorage.setItem("mission",mission);
+
+if(mission>=3){
+streak++;
+localStorage.setItem("streak",streak);
+mission=0;
+localStorage.setItem("mission",0);
+}
+
+let newLevel=Math.floor(xp/50)+1;
+if(newLevel>level){
+level=newLevel;
+localStorage.setItem("level",level);
+showLevelUp();
+}
+
+updateUI();
+}
+
+function updateUI(){
+document.getElementById("xp").innerText=xp;
+document.getElementById("level").innerText=level;
+document.getElementById("streak").innerText=streak;
+document.getElementById("mission").innerText=mission;
+document.getElementById("progress").style.width=(xp%50)*2+"%";
+}
+
+function showLevelUp(){
+document.getElementById("newLevel").innerText=level;
+document.getElementById("levelupBox").style.display="block";
+}
+
+function closeLevelUp(){
+document.getElementById("levelupBox").style.display="none";
 }
 
 function goBack(){
-  document.getElementById("lesson").style.display="none";
-  document.getElementById("menu").style.display="block";
+document.getElementById("lesson").style.display="none";
+document.getElementById("menu").style.display="block";
 }
-
 </script>
 
 </body>
