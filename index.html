@@ -7,210 +7,207 @@
 
 <style>
 body{
-margin:0;
-font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-background:#f2f7fb;
-text-align:center;
-color:#333;
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#f2f7fb;
+    text-align:center;
 }
 
 header{
-background:#cfe9f7;
-padding:25px;
-border-bottom-left-radius:25px;
-border-bottom-right-radius:25px;
+    background:#cfe9f7;
+    padding:25px;
+    border-bottom-left-radius:25px;
+    border-bottom-right-radius:25px;
 }
 
 button{
-padding:12px 18px;
-border:none;
-border-radius:15px;
-margin:8px;
-font-size:16px;
-cursor:pointer;
+    padding:12px 20px;
+    margin:8px;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+    cursor:pointer;
 }
 
-.lang-btn{width:220px;}
-.no{background:#d7eefb;}
-.es{background:#f6d6df;}
-.en{background:#e6e6e6;}
+.langBtn{width:250px;}
 
 .card{
-background:white;
-margin:25px auto;
-padding:20px;
-width:90%;
-max-width:400px;
-border-radius:20px;
-box-shadow:0 5px 15px rgba(0,0,0,0.08);
-}
-
-input{
-padding:10px;
-border-radius:10px;
-border:1px solid #ccc;
-width:80%;
-margin-top:10px;
+    background:white;
+    padding:20px;
+    margin:20px auto;
+    width:90%;
+    max-width:400px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
 .repeat{
-font-size:12px;
-color:#e67e22;
-margin-top:6px;
+    color:#ff7a00;
+    font-size:14px;
 }
+
+.correct{background:#c8f7c5;}
+.wrong{background:#ffd6d6;}
+
+#lesson{display:none;}
 </style>
 </head>
+
 <body>
 
 <header>
 <h1>Trilingua</h1>
-<p>Drei Sprachen. Ein Flow.</p>
-🔥 Streak: <span id="streak">0</span>
+<p>🔥 XP: <span id="xp">0</span></p>
 </header>
 
-<div id="home">
-<br>
-<button class="lang-btn no" onclick="startLesson('no')">🇳🇴 Norwegisch</button><br>
-<button class="lang-btn es" onclick="startLesson('es')">🇪🇸 Spanisch</button><br>
-<button class="lang-btn en" onclick="startLesson('en')">🇬🇧 Englisch</button>
+<div id="menu">
+<h2>Sprache wählen</h2>
+<button class="langBtn" onclick="startLesson('nor')">🇳🇴 Norwegisch</button><br>
+<button class="langBtn" onclick="startLesson('spa')">🇪🇸 Spanisch</button><br>
+<button class="langBtn" onclick="startLesson('eng')">🇬🇧 Englisch</button>
 </div>
 
-<div id="lesson" style="display:none;"></div>
+<div id="lesson"></div>
 
 <script>
 
-let currentQueue=[];
-let wrongQueue=[];
-let questionCount=0;
-let currentQuestion=null;
+let XP = 0;
+let queue = [];
+let repeatQueue = [];
+let currentQuestion = null;
 
-const questions={
-no:[
-{q:"Was bedeutet 'Hei'?",a:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
+const questions = {
+
+nor:[
+{q:"Was heißt 'vin'?",a:"Wein",options:["Wein","Bier","Milch","Wasser"]},
+{q:"Was heißt 'søster'?",a:"Schwester",options:["Mutter","Schwester","Tochter","Tante"]},
+{q:"Was heißt 'vann'?",a:"Wasser",options:["Saft","Wasser","Milch","Wein"]},
+{q:"Was heißt 'brød'?",a:"Brot",options:["Käse","Fisch","Brot","Fleisch"]},
+{q:"Was heißt 'hvorfor'?",a:"warum",options:["wann","warum","wo","wer"]},
 {q:"Übersetze: Jeg lærer norsk",a:"Ich lerne Norwegisch",type:"text"},
-{q:"Was bedeutet 'Takk'?",a:"Danke",options:["Danke","Hallo","Bitte","Nein"]},
-{q:"Übersetze: God morgen",a:"Guten Morgen",type:"text"},
-{q:"Was bedeutet 'Ha det'?",a:"Tschüss",options:["Hallo","Bitte","Tschüss","Danke"]}
+{q:"Was heißt 'regner'?",a:"es regnet",options:["es schneit","es regnet","Wind","Sonne"]},
+{q:"Was heißt 'jobb'?",a:"Arbeit",options:["Schule","Arbeit","Freund","Haus"]},
+{q:"Was heißt 'katt'?",a:"Katze",options:["Hund","Vogel","Katze","Pferd"]},
+{q:"Was heißt 'min'?",a:"mein",options:["mein","dein","sein","ihr"]}
 ],
-es:[
-{q:"Was bedeutet 'Gracias'?",a:"Danke",options:["Hallo","Danke","Bitte","Nein"]},
-{q:"Übersetze: Buenos días",a:"Guten Morgen",type:"text"},
-{q:"Was bedeutet 'Hola'?",a:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
-{q:"Übersetze: Estoy aprendiendo español",a:"Ich lerne Spanisch",type:"text"},
-{q:"Was bedeutet 'Adiós'?",a:"Tschüss",options:["Hallo","Bitte","Tschüss","Nein"]}
+
+spa:[
+{q:"Yo ____ (hablar)",a:"hablé",type:"text"},
+{q:"Nosotros ____ (comer)",a:"comimos",type:"text"},
+{q:"Was heißt 'rojo'?",a:"rot",options:["blau","rot","grün","gelb"]},
+{q:"Was heißt 'zapatos'?",a:"Schuhe",options:["Hemd","Schuhe","Hose","Jacke"]},
+{q:"Él ____ (vivir)",a:"vivió",type:"text"},
+{q:"Was heißt 'familia'?",a:"Familie",options:["Freunde","Familie","Schule","Stadt"]},
+{q:"Was heißt 'ayer'?",a:"gestern",options:["heute","morgen","gestern","jetzt"]},
+{q:"Tú ____ (bailar)",a:"bailaste",type:"text"},
+{q:"Was heißt 'negro'?",a:"schwarz",options:["weiß","schwarz","rot","pink"]},
+{q:"Was heißt 'comida'?",a:"Essen",options:["Trinken","Essen","Haus","Stuhl"]}
 ],
-en:[
-{q:"Was bedeutet 'Apple'?",a:"Apfel",options:["Apfel","Birne","Banane","Traube"]},
-{q:"Übersetze: Good morning",a:"Guten Morgen",type:"text"},
-{q:"Was bedeutet 'Goodbye'?",a:"Tschüss",options:["Hallo","Danke","Tschüss","Bitte"]},
-{q:"Übersetze: I learn English",a:"Ich lerne Englisch",type:"text"},
-{q:"Was bedeutet 'Please'?",a:"Bitte",options:["Danke","Bitte","Hallo","Nein"]}
+
+eng:[
+{q:"What does 'although' mean?",a:"obwohl",options:["weil","obwohl","aber","wenn"]},
+{q:"Choose correct: She ____ to school yesterday.",a:"went",options:["go","went","gone","going"]},
+{q:"What does 'nevertheless' mean?",a:"trotzdem",options:["trotzdem","niemals","immer","fast"]},
+{q:"Translate: I have already finished.",a:"Ich habe bereits fertiggemacht",type:"text"},
+{q:"Choose correct: If I ____ more time, I would travel.",a:"had",options:["have","had","will have","having"]},
+{q:"What does 'achievement' mean?",a:"Erfolg",options:["Fehler","Erfolg","Versuch","Problem"]},
+{q:"Choose correct: She has been waiting for two hours.",a:"Present Perfect Progressive",options:["Simple Past","Future","Present Perfect Progressive","Past Perfect"]},
+{q:"Translate: He didn't tell the truth.",a:"Er hat nicht die Wahrheit gesagt",type:"text"},
+{q:"What does 'environment' mean?",a:"Umwelt",options:["Welt","Umwelt","Ort","Region"]},
+{q:"Choose correct: They were watching TV.",a:"Past Progressive",options:["Simple Past","Past Progressive","Future","Present"]}
 ]
+
 };
 
 function startLesson(lang){
-currentQueue=[...questions[lang]];
-wrongQueue=[];
-questionCount=0;
-document.getElementById("home").style.display="none";
-document.getElementById("lesson").style.display="block";
-nextQuestion();
+    queue = shuffle([...questions[lang]]);
+    repeatQueue = [];
+    document.getElementById("menu").style.display="none";
+    document.getElementById("lesson").style.display="block";
+    nextQuestion();
 }
 
 function nextQuestion(){
-if(questionCount>=5){
-if(wrongQueue.length>0){
-currentQueue.push(...wrongQueue);
-wrongQueue=[];
-}
-else{
-document.getElementById("lesson").innerHTML=
-`<div class="card">
-<h2>🎉 Lektion abgeschlossen!</h2>
-<button onclick="goHome()">Zurück zum Menü</button>
-</div>`;
-return;
-}
-}
+    if(queue.length===0){
+        if(repeatQueue.length>0){
+            queue = shuffle([...repeatQueue]);
+            repeatQueue=[];
+        }else{
+            document.getElementById("lesson").innerHTML =
+            "<div class='card'><h2>🎉 Lektion fertig!</h2><button onclick='goHome()'>Zurück</button></div>";
+            return;
+        }
+    }
 
-currentQuestion=currentQueue.shift();
-questionCount++;
-
-renderQuestion(currentQuestion);
+    currentQuestion = queue.shift();
+    renderQuestion(currentQuestion);
 }
 
 function renderQuestion(q){
-let repeatMark=q.wrong?'<div class="repeat">🔁 Wiederholung</div>':"";
+    let repeatMark = q.repeat ? "<div class='repeat'>⚠ Wiederholung</div>" : "";
 
-if(q.type==="text"){
-document.getElementById("lesson").innerHTML=
-`<div class="card">
-<h3>${q.q}</h3>
-${repeatMark}
-<input id="answerInput">
-<br>
-<button onclick="checkText()">Antwort prüfen</button>
-<button onclick="goHome()">Beenden</button>
-</div>`;
-}
-else{
-let buttons=q.options.map(opt=>
-`<button onclick="checkOption('${opt}')">${opt}</button>`
-).join("<br>");
+    if(q.type==="text"){
+        document.getElementById("lesson").innerHTML=
+        `<div class="card">
+        ${repeatMark}
+        <h3>${q.q}</h3>
+        <input id="answer" placeholder="Antwort..."><br><br>
+        <button onclick="checkText()">Antwort prüfen</button><br>
+        <button onclick="goHome()">Menü</button>
+        </div>`;
+    }else{
+        let optionsHTML="";
+        q.options.forEach(opt=>{
+            optionsHTML+=`<button onclick="checkMC('${opt}')">${opt}</button><br>`;
+        });
 
-document.getElementById("lesson").innerHTML=
-`<div class="card">
-<h3>${q.q}</h3>
-${repeatMark}
-${buttons}
-<br>
-<button onclick="goHome()">Beenden</button>
-</div>`;
-}
+        document.getElementById("lesson").innerHTML=
+        `<div class="card">
+        ${repeatMark}
+        <h3>${q.q}</h3>
+        ${optionsHTML}
+        <br><button onclick="goHome()">Menü</button>
+        </div>`;
+    }
 }
 
-function normalize(str){
-return str.toLowerCase().trim();
-}
-
-function similar(a,b){
-a=normalize(a);
-b=normalize(b);
-if(a===b) return true;
-if(Math.abs(a.length-b.length)>1) return false;
-let diff=0;
-for(let i=0;i<Math.min(a.length,b.length);i++){
-if(a[i]!==b[i]) diff++;
-}
-return diff<=1;
-}
-
-function checkOption(answer){
-if(answer===currentQuestion.a){
-setTimeout(nextQuestion,600);
-}else{
-currentQuestion.wrong=true;
-wrongQueue.push(currentQuestion);
-setTimeout(nextQuestion,600);
-}
+function checkMC(choice){
+    if(choice===currentQuestion.a){
+        XP+=10;
+        document.getElementById("xp").innerText=XP;
+    }else{
+        currentQuestion.repeat=true;
+        repeatQueue.push(currentQuestion);
+    }
+    setTimeout(nextQuestion,800);
 }
 
 function checkText(){
-let input=document.getElementById("answerInput").value;
-if(similar(input,currentQuestion.a)){
-setTimeout(nextQuestion,600);
-}else{
-currentQuestion.wrong=true;
-wrongQueue.push(currentQuestion);
-setTimeout(nextQuestion,600);
-}
+    let input=document.getElementById("answer").value.trim().toLowerCase();
+    if(input===currentQuestion.a.toLowerCase()){
+        XP+=15;
+        document.getElementById("xp").innerText=XP;
+    }else{
+        currentQuestion.repeat=true;
+        repeatQueue.push(currentQuestion);
+    }
+    setTimeout(nextQuestion,800);
 }
 
 function goHome(){
-document.getElementById("lesson").style.display="none";
-document.getElementById("home").style.display="block";
+    document.getElementById("lesson").style.display="none";
+    document.getElementById("menu").style.display="block";
+}
+
+function shuffle(array){
+    for(let i=array.length-1;i>0;i--){
+        let j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+    }
+    return array;
 }
 
 </script>
+
 </body>
 </html>
