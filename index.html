@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trilingua</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f2f7fb;
+  text-align: center;
+  color: #333;
+}
+
+header {
+  background: #cfe9f7;
+  padding: 25px;
+  border-bottom-left-radius: 25px;
+  border-bottom-right-radius: 25px;
+}
+
+h1 { margin: 0; font-size: 28px; }
+.motto { font-size: 14px; color: #555; }
+.streak { margin-top: 10px; font-size: 15px; }
+.mission { font-size: 14px; margin-top: 5px; }
+
+.container { padding: 20px; }
+
+.card {
+  background: white;
+  margin: 15px auto;
+  padding: 20px;
+  border-radius: 20px;
+  width: 85%;
+  max-width: 420px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.card:hover { transform: scale(1.03); }
+
+.nor { background: #e3f2fb; }
+.spa { background: #fce4ec; }
+.eng { background: #eeeeee; }
+
+button {
+  margin: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 15px;
+  background: #cfe9f7;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover { opacity: 0.8; }
+
+.back {
+  margin-top: 15px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>Trilingua</h1>
+<div class="motto">Drei Sprachen. Ein Flow.</div>
+<div class="streak">🔥 Streak: <span id="streak">0</span></div>
+<div class="mission">🎯 Daily Mission: <span id="mission">0</span>/3</div>
+</header>
+
+<div class="container" id="menu">
+<div class="card nor" onclick="startLesson('nor')">🇳🇴 Norwegisch</div>
+<div class="card spa" onclick="startLesson('spa')">🇪🇸 Spanisch</div>
+<div class="card eng" onclick="startLesson('eng')">🇬🇧 Englisch</div>
+</div>
+
+<div class="container" id="lesson" style="display:none;"></div>
+
+<script>
+
+let streak = localStorage.getItem("streak") || 0;
+let mission = localStorage.getItem("mission") || 0;
+let lastDate = localStorage.getItem("date");
+
+let today = new Date().toDateString();
+
+if(lastDate !== today){
+  mission = 0;
+  localStorage.setItem("mission", 0);
+  localStorage.setItem("date", today);
+}
+
+document.getElementById("streak").innerText = streak;
+document.getElementById("mission").innerText = mission;
+
+const questions = {
+  nor: [
+    {q:"Was bedeutet 'Hei'?", a:"Hallo"},
+    {q:"Was bedeutet 'Hvordan har du det?'", a:"Wie geht es dir?"},
+    {q:"Was bedeutet 'Jeg lærer norsk hver dag.'", a:"Ich lerne jeden Tag Norwegisch."}
+  ],
+  spa: [
+    {q:"Was bedeutet 'Gracias'?", a:"Danke"},
+    {q:"Was bedeutet '¿Cómo estás?'", a:"Wie geht es dir?"},
+    {q:"Was bedeutet 'Estoy aprendiendo español.'", a:"Ich lerne Spanisch."}
+  ],
+  eng: [
+    {q:"Was bedeutet 'Apple'?", a:"Apfel"},
+    {q:"Was bedeutet 'How are you?'", a:"Wie geht es dir?"},
+    {q:"Was bedeutet 'I practice English daily.'", a:"Ich übe täglich Englisch."}
+  ]
+};
+
+function startLesson(lang){
+  document.getElementById("menu").style.display="none";
+  let lesson = document.getElementById("lesson");
+  lesson.style.display="block";
+
+  let random = questions[lang][Math.floor(Math.random()*3)];
+
+  lesson.innerHTML = `
+    <div class="card">
+      <h3>${random.q}</h3>
+      <button onclick="checkAnswer('${random.a}','${random.a}')">${random.a}</button>
+      <button onclick="checkAnswer('Falsch','${random.a}')">Andere Antwort</button>
+      <div class="back" onclick="goBack()">← Zurück</div>
+    </div>
+  `;
+}
+
+function checkAnswer(answer, correct){
+  if(answer===correct){
+    mission++;
+    localStorage.setItem("mission", mission);
+    document.getElementById("mission").innerText = mission;
+
+    if(mission>=3){
+      streak++;
+      localStorage.setItem("streak", streak);
+      document.getElementById("streak").innerText = streak;
+      alert("🎉 Daily Mission geschafft! Streak erhöht!");
+      mission=0;
+      localStorage.setItem("mission", 0);
+      document.getElementById("mission").innerText = mission;
+    } else {
+      alert("Richtig! 🎉");
+    }
+  } else {
+    alert("Leider falsch 🙈");
+  }
+}
+
+function goBack(){
+  document.getElementById("lesson").style.display="none";
+  document.getElementById("menu").style.display="block";
+}
+
+</script>
+
+</body>
+</html>
