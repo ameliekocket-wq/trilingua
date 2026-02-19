@@ -108,7 +108,7 @@ document.getElementById("streak").innerText = streak;
 // ===== GAME STATE =====
 
 let currentLanguage = null;
-let currentLevel = null;
+let currentLevel = 1;
 let questions = [];
 let wrongQueue = [];
 let index = 0;
@@ -195,10 +195,15 @@ document.getElementById("menu").innerHTML=html;
 // ===== START LEVEL =====
 
 function startLevel(level){
+
+let unlocked = parseInt(localStorage.getItem(currentLanguage+"_unlocked")) || 1;
+if(level > unlocked) return;
+
 currentLevel = level;
 questions = [...data[currentLanguage][level-1]];
 wrongQueue = [];
 index = 0;
+
 document.getElementById("menu").innerHTML="";
 nextQuestion();
 }
@@ -261,20 +266,19 @@ unlocked++;
 localStorage.setItem(currentLanguage+"_unlocked", unlocked);
 }
 
-let nextButton = "";
-
-if(currentLevel < 10){
-nextButton = `<button onclick="startLevel(${currentLevel+1})">➡ Weiter zu Level ${currentLevel+1}</button>`;
-}
-
 document.getElementById("content").innerHTML=`
 <div class="card">
 <h2>🎉 Level ${currentLevel} geschafft!</h2>
-${nextButton}
+<button onclick="goToNextLevel()">➡ Weiter zu Level ${currentLevel+1}</button>
 <br><br>
 <button onclick="renderLevels()">Zurück zu Levels</button>
 </div>
 `;
+}
+
+function goToNextLevel(){
+currentLevel++;
+startLevel(currentLevel);
 }
 
 renderMainMenu();
