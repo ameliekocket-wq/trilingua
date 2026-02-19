@@ -9,190 +9,246 @@
 <link rel="icon" href="logo.png">
 
 <style>
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f2f7fb;
-  text-align: center;
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#f2f7fb;
+text-align:center;
 }
 
-h1 {
-  margin-top: 30px;
+header{
+background:#cfe9f7;
+padding:20px;
+border-bottom-left-radius:25px;
+border-bottom-right-radius:25px;
 }
 
-.level-container {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 15px;
-  padding: 30px;
-  max-width: 500px;
-  margin: auto;
+h1{margin:0;}
+
+.stats{
+margin-top:10px;
+font-size:14px;
 }
 
-.level {
-  padding: 20px;
-  border-radius: 15px;
-  background: #4da6ff;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
+.container{padding:20px;}
+
+.button{
+padding:15px;
+margin:8px;
+border:none;
+border-radius:15px;
+background:#f8cfe0;
+font-weight:bold;
+cursor:pointer;
 }
 
-.level.locked {
-  background: #777;
-  cursor: not-allowed;
+.level{background:#f8cfe0;}
+.locked{background:#aaa;color:#555;cursor:not-allowed;}
+
+.card{
+background:white;
+padding:20px;
+margin:20px;
+border-radius:20px;
 }
 
-.card {
-  background: white;
-  padding: 20px;
-  margin: 30px;
-  border-radius: 20px;
-}
-
-button {
-  margin: 10px;
-  padding: 10px 15px;
-  border-radius: 10px;
-  border: none;
-  background: #4da6ff;
-  color: white;
-  cursor: pointer;
+input{
+padding:8px;
+border-radius:8px;
+border:1px solid #ccc;
 }
 </style>
 </head>
 
 <body>
 
+<header>
 <h1>Trilingua</h1>
+<div class="stats">
+⭐ XP: <span id="xp">0</span> |
+🔥 Streak: <span id="streak">0</span>
+</div>
+</header>
 
-<div id="menu" class="level-container"></div>
-<div id="game"></div>
+<div id="menu" class="container"></div>
+<div id="content"></div>
 
 <script>
 
-let unlockedLevel = parseInt(localStorage.getItem("unlockedLevel")) || 1;
-let currentLevel = 1;
-let questions = [];
-let queue = [];
-let wrongQueue = [];
-let questionCount = 0;
+let XP = parseInt(localStorage.getItem("xp")) || 0;
+let streak = parseInt(localStorage.getItem("streak")) || 0;
+let lastPlayed = localStorage.getItem("lastPlayed");
 
-const allQuestions = {
-  1: [
-    {q:"Hei means?", a:"Hello", options:["Hello","Bye","Thanks"]},
-    {q:"Takk means?", a:"Thanks", options:["Hello","Thanks","Milk"]},
-    {q:"Hva means?", a:"What", options:["Who","What","Where"]},
-    {q:"Brød means?", a:"Bread", options:["Bread","Fish","Water"]},
-    {q:"Mor means?", a:"Mother", options:["Father","Mother","Friend"]}
-  ],
-  2: [
-    {q:"Rojo means?", a:"Red", options:["Blue","Red","Green"]},
-    {q:"Azul means?", a:"Blue", options:["Red","Blue","Yellow"]},
-    {q:"Camisa means?", a:"Shirt", options:["Shirt","Shoes","Hat"]},
-    {q:"Zapatos means?", a:"Shoes", options:["Shoes","Jacket","Hat"]},
-    {q:"Negro means?", a:"Black", options:["White","Black","Pink"]}
-  ],
-  3: [
-    {q:"Apple means?", a:"Apfel", options:["Apfel","Birne","Banane"]},
-    {q:"Dog means?", a:"Hund", options:["Katze","Hund","Vogel"]},
-    {q:"House means?", a:"Haus", options:["Haus","Auto","Schule"]},
-    {q:"Water means?", a:"Wasser", options:["Milch","Saft","Wasser"]},
-    {q:"Friend means?", a:"Freund", options:["Feind","Freund","Lehrer"]}
-  ]
+document.getElementById("xp").innerText = XP;
+document.getElementById("streak").innerText = streak;
+
+updateStreak();
+
+let currentLanguage = null;
+let currentLevel = null;
+let questionIndex = 0;
+let questions = [];
+let wrongQueue = [];
+
+const data = {
+
+nor:[
+["hei","takk","brød","mor","vann"],
+["venn","jobb","katt","hus","sol"],
+["vind","regner","snør","høst","vinter"],
+["språk","skole","lærer","elev","klasse"],
+["bord","stol","seng","rom","dør"],
+["hund","fisk","melk","ost","pizza"],
+["venstre","høyre","over","under","bak"],
+["alltid","ofte","aldri","nå","senere"],
+["rik","fattig","lett","vanskelig","fort"],
+["familie","bestevenn","søster","bror","far"]
+],
+
+spa:[
+["rojo","azul","verde","negro","blanco"],
+["camisa","zapatos","falda","abrigo","sombrero"],
+["familia","hermano","madre","padre","abuela"],
+["ayer","hoy","mañana","siempre","nunca"],
+["comida","agua","pan","leche","vino"],
+["escuela","profesor","alumno","libro","mesa"],
+["grande","pequeño","rápido","lento","nuevo"],
+["tener","ir","hacer","decir","venir"],
+["viajar","comer","vivir","hablar","probar"],
+["ciudad","casa","calle","mercado","tienda"]
+],
+
+eng:[
+["dog","cat","house","water","friend"],
+["blue","green","red","black","white"],
+["teacher","student","school","book","table"],
+["morning","evening","yesterday","today","tomorrow"],
+["shirt","shoes","jacket","hat","dress"],
+["always","never","often","sometimes","now"],
+["big","small","fast","slow","easy"],
+["family","mother","father","sister","brother"],
+["travel","eat","drink","read","write"],
+["city","street","market","shop","door"]
+]
+
 };
 
-// Fill up to level 10 automatically
-for(let i=4;i<=10;i++){
-  allQuestions[i]=allQuestions[3];
+function updateStreak(){
+let today = new Date().toDateString();
+
+if(lastPlayed !== today){
+let yesterday = new Date();
+yesterday.setDate(yesterday.getDate()-1);
+
+if(lastPlayed === yesterday.toDateString()){
+streak++;
+}else{
+streak = 1;
 }
 
-function renderMenu(){
-  const menu = document.getElementById("menu");
-  menu.innerHTML = "";
-  for(let i=1;i<=10;i++){
-    const div = document.createElement("div");
-    div.className="level";
-    div.innerText="Level "+i;
+localStorage.setItem("streak",streak);
+localStorage.setItem("lastPlayed",today);
+document.getElementById("streak").innerText = streak;
+}
+}
 
-    if(i>unlockedLevel){
-      div.classList.add("locked");
-    } else {
-      div.onclick=()=>startLevel(i);
-    }
+function renderMainMenu(){
+currentLanguage=null;
+document.getElementById("content").innerHTML="";
+document.getElementById("menu").innerHTML=`
+<button class="button" onclick="openLanguage('nor')">🇳🇴 Norwegisch</button>
+<button class="button" onclick="openLanguage('spa')">🇪🇸 Spanisch</button>
+<button class="button" onclick="openLanguage('eng')">🇬🇧 Englisch</button>
+`;
+}
 
-    menu.appendChild(div);
-  }
+function openLanguage(lang){
+currentLanguage=lang;
+renderLevels();
+}
+
+function renderLevels(){
+let unlocked = parseInt(localStorage.getItem(currentLanguage+"_unlocked")) || 1;
+
+let html="<h2>Levels</h2>";
+
+for(let i=1;i<=10;i++){
+if(i<=unlocked){
+html+=`<button class="button level" onclick="startLevel(${i})">Level ${i}</button>`;
+}else{
+html+=`<button class="button locked">🔒 Level ${i}</button>`;
+}
+}
+
+html+=`<br><button class="button" onclick="renderMainMenu()">Zurück</button>`;
+document.getElementById("menu").innerHTML=html;
 }
 
 function startLevel(level){
-  currentLevel = level;
-  questions = [...allQuestions[level]];
-  queue = [...questions];
-  wrongQueue = [];
-  questionCount = 0;
-  document.getElementById("menu").style.display="none";
-  nextQuestion();
+currentLevel=level;
+questions=[...data[currentLanguage][level-1]];
+wrongQueue=[];
+questionIndex=0;
+nextQuestion();
 }
 
 function nextQuestion(){
-
-  if(questionCount>=5){
-    if(wrongQueue.length>0){
-      queue = [...wrongQueue];
-      wrongQueue=[];
-      questionCount=0;
-    } else {
-      finishLevel();
-      return;
-    }
-  }
-
-  const question = queue.shift();
-  questionCount++;
-  renderQuestion(question);
+if(questionIndex>=questions.length){
+if(wrongQueue.length>0){
+questions=[...wrongQueue];
+wrongQueue=[];
+questionIndex=0;
+}else{
+finishLevel();
+return;
+}
 }
 
-function renderQuestion(question){
-  const game = document.getElementById("game");
+let word=questions[questionIndex];
+questionIndex++;
 
-  let html = `<div class="card"><h2>${question.q}</h2>`;
-
-  question.options.forEach(opt=>{
-    html += `<button onclick="answer('${opt}','${question.a}')">${opt}</button>`;
-  });
-
-  html += `</div>`;
-  game.innerHTML = html;
+document.getElementById("content").innerHTML=`
+<div class="card">
+<h3>Type this word again:</h3>
+<h2>${word}</h2>
+<input id="answer">
+<br><br>
+<button onclick="checkAnswer('${word}')">Check</button>
+</div>
+`;
 }
 
-function answer(choice, correct){
-  if(choice!==correct){
-    wrongQueue.push({q:document.querySelector("h2").innerText, a:correct, options:[correct]});
-  }
-  setTimeout(nextQuestion, 400);
+function checkAnswer(word){
+let input=document.getElementById("answer").value.trim().toLowerCase();
+
+if(input===word.toLowerCase()){
+XP+=10;
+document.getElementById("xp").innerText=XP;
+localStorage.setItem("xp",XP);
+}else{
+wrongQueue.push(word);
+}
+
+setTimeout(nextQuestion,300);
 }
 
 function finishLevel(){
-  document.getElementById("game").innerHTML=
-  `<div class="card">
-    <h2>Level Completed 🎉</h2>
-    <button onclick="goHome()">Back to Menu</button>
-   </div>`;
+let unlocked=parseInt(localStorage.getItem(currentLanguage+"_unlocked"))||1;
 
-  if(currentLevel===unlockedLevel && unlockedLevel<10){
-    unlockedLevel++;
-    localStorage.setItem("unlockedLevel", unlockedLevel);
-  }
+if(currentLevel===unlocked && unlocked<10){
+unlocked++;
+localStorage.setItem(currentLanguage+"_unlocked",unlocked);
 }
 
-function goHome(){
-  document.getElementById("menu").style.display="grid";
-  document.getElementById("game").innerHTML="";
-  renderMenu();
+document.getElementById("content").innerHTML=`
+<div class="card">
+<h2>🎉 Level geschafft!</h2>
+<button onclick="renderLevels()">Zurück zu Levels</button>
+</div>
+`;
 }
 
-renderMenu();
+renderMainMenu();
 
 </script>
 </body>
