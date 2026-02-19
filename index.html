@@ -63,7 +63,7 @@ border:1px solid #ccc;
 <body>
 
 <header>
-<h1>Trilingua</h1>
+<h1>Trilingua V4</h1>
 <div class="stats">
 ⭐ XP: <span id="xp">0</span> |
 🔥 Streak: <span id="streak">0</span>
@@ -162,6 +162,7 @@ eng:[
 
 function renderMainMenu(){
 document.getElementById("content").innerHTML="";
+document.getElementById("menu").style.display="block";
 document.getElementById("menu").innerHTML=`
 <button class="button" onclick="openLanguage('nor')">🇳🇴 Norwegisch</button>
 <button class="button" onclick="openLanguage('spa')">🇪🇸 Spanisch</button>
@@ -204,7 +205,7 @@ questions = [...data[currentLanguage][level-1]];
 wrongQueue = [];
 index = 0;
 
-document.getElementById("menu").innerHTML="";
+document.getElementById("menu").style.display="none";
 nextQuestion();
 }
 
@@ -234,6 +235,8 @@ document.getElementById("content").innerHTML=`
 <input id="answer" autofocus>
 <br><br>
 <button onclick="checkAnswer('${word}')">Check</button>
+<br><br>
+<button onclick="exitLevel()">Zurück</button>
 </div>
 `;
 }
@@ -266,10 +269,16 @@ unlocked++;
 localStorage.setItem(currentLanguage+"_unlocked", unlocked);
 }
 
+let nextButton = "";
+
+if(currentLevel < 10){
+nextButton = `<button onclick="goToNextLevel()">➡ Weiter zu Level ${currentLevel+1}</button>`;
+}
+
 document.getElementById("content").innerHTML=`
 <div class="card">
 <h2>🎉 Level ${currentLevel} geschafft!</h2>
-<button onclick="goToNextLevel()">➡ Weiter zu Level ${currentLevel+1}</button>
+${nextButton}
 <br><br>
 <button onclick="renderLevels()">Zurück zu Levels</button>
 </div>
@@ -279,6 +288,11 @@ document.getElementById("content").innerHTML=`
 function goToNextLevel(){
 currentLevel++;
 startLevel(currentLevel);
+}
+
+function exitLevel(){
+renderLevels();
+document.getElementById("content").innerHTML="";
 }
 
 renderMainMenu();
