@@ -16,33 +16,34 @@ background:#f2f7fb;
 text-align:center;
 }
 
-h1{
-margin-top:30px;
+header{
+background:#cfe9f7;
+padding:20px;
+border-bottom-left-radius:25px;
+border-bottom-right-radius:25px;
 }
 
-.container{
-padding:20px;
+h1{margin:0;}
+
+.stats{
+margin-top:10px;
+font-size:14px;
 }
+
+.container{padding:20px;}
 
 .button{
 padding:15px;
-margin:10px;
-border-radius:15px;
+margin:8px;
 border:none;
-background:#cfe9f7;
+border-radius:15px;
+background:#f8cfe0;
 font-weight:bold;
 cursor:pointer;
 }
 
-.level{
-background:#f8cfe0;
-}
-
-.locked{
-background:#aaa;
-color:#555;
-cursor:not-allowed;
-}
+.level{background:#f8cfe0;}
+.locked{background:#aaa;color:#555;cursor:not-allowed;}
 
 .card{
 background:white;
@@ -50,17 +51,38 @@ padding:20px;
 margin:20px;
 border-radius:20px;
 }
+
+input{
+padding:8px;
+border-radius:8px;
+border:1px solid #ccc;
+}
 </style>
 </head>
 
 <body>
 
+<header>
 <h1>Trilingua</h1>
+<div class="stats">
+⭐ XP: <span id="xp">0</span> |
+🔥 Streak: <span id="streak">0</span>
+</div>
+</header>
 
 <div id="menu" class="container"></div>
 <div id="content"></div>
 
 <script>
+
+let XP = parseInt(localStorage.getItem("xp")) || 0;
+let streak = parseInt(localStorage.getItem("streak")) || 0;
+let lastPlayed = localStorage.getItem("lastPlayed");
+
+document.getElementById("xp").innerText = XP;
+document.getElementById("streak").innerText = streak;
+
+updateStreak();
 
 let currentLanguage = null;
 let currentLevel = null;
@@ -69,8 +91,7 @@ let questions = [];
 let wrongQueue = [];
 
 const data = {
-
-nor: [
+nor:[
 ["hei","takk","brød","mor","vann"],
 ["venn","jobb","katt","hus","sol"],
 ["vind","regner","snør","høst","vinter"],
@@ -82,8 +103,7 @@ nor: [
 ["rik","fattig","lett","vanskelig","fort"],
 ["familie","bestevenn","søster","bror","far"]
 ],
-
-spa: [
+spa:[
 ["rojo","azul","verde","negro","blanco"],
 ["camisa","zapatos","falda","abrigo","sombrero"],
 ["familia","hermano","madre","padre","abuela"],
@@ -95,8 +115,7 @@ spa: [
 ["viajar","comer","vivir","hablar","probar"],
 ["ciudad","casa","calle","mercado","tienda"]
 ],
-
-eng: [
+eng:[
 ["dog","cat","house","water","friend"],
 ["blue","green","red","black","white"],
 ["teacher","student","school","book","table"],
@@ -108,8 +127,26 @@ eng: [
 ["travel","eat","drink","read","write"],
 ["city","street","market","shop","door"]
 ]
-
 };
+
+function updateStreak(){
+let today = new Date().toDateString();
+
+if(lastPlayed !== today){
+let yesterday = new Date();
+yesterday.setDate(yesterday.getDate()-1);
+
+if(lastPlayed === yesterday.toDateString()){
+streak++;
+}else{
+streak = 1;
+}
+
+localStorage.setItem("streak",streak);
+localStorage.setItem("lastPlayed",today);
+document.getElementById("streak").innerText = streak;
+}
+}
 
 function renderMainMenu(){
 currentLanguage=null;
@@ -140,7 +177,6 @@ html+=`<button class="button locked">🔒 Level ${i}</button>`;
 }
 
 html+=`<br><button class="button" onclick="renderMainMenu()">Zurück</button>`;
-
 document.getElementById("menu").innerHTML=html;
 }
 
@@ -149,11 +185,14 @@ currentLevel=level;
 questions=[...data[currentLanguage][level-1]];
 wrongQueue=[];
 questionIndex=0;
+document.getElementById("menu").innerHTML="";
 nextQuestion();
 }
 
 function nextQuestion(){
+
 if(questionIndex>=questions.length){
+
 if(wrongQueue.length>0){
 questions=[...wrongQueue];
 wrongQueue=[];
@@ -164,13 +203,14 @@ return;
 }
 }
 
-let word = questions[questionIndex];
+let word=questions[questionIndex];
 questionIndex++;
 
 document.getElementById("content").innerHTML=`
 <div class="card">
-<h3>Übersetze: ${word}</h3>
-<input id="answer">
+<h3>Type this word again:</h3>
+<h2>${word}</h2>
+<input id="answer" autofocus>
 <br><br>
 <button onclick="checkAnswer('${word}')">Check</button>
 </div>
@@ -180,7 +220,11 @@ document.getElementById("content").innerHTML=`
 function checkAnswer(word){
 let input=document.getElementById("answer").value.trim().toLowerCase();
 
-if(input!==word.toLowerCase()){
+if(input===word.toLowerCase()){
+XP+=10;
+document.getElementById("xp").innerText=XP;
+localStorage.setItem("xp",XP);
+}else{
 wrongQueue.push(word);
 }
 
@@ -188,7 +232,8 @@ setTimeout(nextQuestion,300);
 }
 
 function finishLevel(){
-let unlocked = parseInt(localStorage.getItem(currentLanguage+"_unlocked")) || 1;
+
+let unlocked=parseInt(localStorage.getItem(currentLanguage+"_unlocked"))||1;
 
 if(currentLevel===unlocked && unlocked<10){
 unlocked++;
@@ -197,7 +242,9 @@ localStorage.setItem(currentLanguage+"_unlocked",unlocked);
 
 document.getElementById("content").innerHTML=`
 <div class="card">
-<h2>🎉 Level geschafft!</h2>
+<h2>🎉 Level ${currentLevel} geschafft!</h2>
+<button onclick="startLevel(${currentLevel+1})">➡ Weiter zu Level ${currentLevel+1}</button>
+<br><br>
 <button onclick="renderLevels()">Zurück zu Levels</button>
 </div>
 `;
