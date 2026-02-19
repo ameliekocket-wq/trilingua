@@ -5,67 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trilingua</title>
 
+<!-- APP ICON -->
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" href="logo.png">
+
 <style>
 body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    background:#f4f6fb;
-    text-align:center;
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#f2f7fb;
+text-align:center;
+color:#333;
 }
 
 header{
-    background:#dfe8f3;
-    padding:20px;
-    border-bottom-left-radius:30px;
-    border-bottom-right-radius:30px;
+background:#cfe9f7;
+padding:25px;
+border-bottom-left-radius:25px;
+border-bottom-right-radius:25px;
 }
 
-header img{
-    width:120px;
-    margin-bottom:10px;
+h1{
+margin:0;
+font-size:32px;
+}
+
+.subtitle{
+opacity:0.7;
+margin-top:5px;
+}
+
+.level-grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:15px;
+padding:20px;
 }
 
 .level{
-    margin:10px auto;
-    padding:15px;
-    width:220px;
-    border-radius:15px;
-    background:#cfe2ff;
-    cursor:pointer;
-    font-weight:bold;
+padding:20px;
+border-radius:20px;
+font-weight:bold;
+cursor:pointer;
+transition:0.2s;
 }
 
 .locked{
-    background:#999;
-    color:white;
-    cursor:not-allowed;
+background:#cccccc;
+color:#777;
+cursor:not-allowed;
+}
+
+.unlocked{
+background:#f8cfe0;
+}
+
+.unlocked:hover{
+transform:scale(1.05);
 }
 
 .card{
-    background:white;
-    padding:20px;
-    margin:20px;
-    border-radius:20px;
+background:white;
+margin:20px;
+padding:25px;
+border-radius:20px;
+box-shadow:0 5px 15px rgba(0,0,0,0.05);
 }
 
 button{
-    padding:10px 20px;
-    margin:5px;
-    border:none;
-    border-radius:10px;
-    background:#4a90e2;
-    color:white;
-    font-weight:bold;
+padding:12px 18px;
+border:none;
+border-radius:15px;
+margin:8px;
+font-size:16px;
+cursor:pointer;
+background:#cfe9f7;
 }
 
-.back{
-    background:#888;
+.correct{
+background:#c8f7d1 !important;
 }
 
-input{
-    padding:8px;
-    border-radius:8px;
-    border:1px solid #ccc;
+.wrong{
+background:#f7c8c8 !important;
+}
+
+.repeat{
+color:#ff6b6b;
+font-size:13px;
+margin-top:5px;
 }
 </style>
 </head>
@@ -73,137 +101,199 @@ input{
 <body>
 
 <header>
-    <img src="logo.png">
-    <h2>Level auswählen</h2>
+<h1>Trilingua</h1>
+<div class="subtitle">Drei Sprachen. Ein Flow.</div>
 </header>
 
-<div id="menu"></div>
+<div id="menu">
+<div class="level-grid" id="levels"></div>
+</div>
+
 <div id="lesson" style="display:none;"></div>
 
 <script>
 
-let unlocked = parseInt(localStorage.getItem("unlocked")) || 1;
-let currentLevel = 1;
-let queue = [];
+let unlockedLevel = parseInt(localStorage.getItem("unlockedLevel")) || 1;
+let currentQuestions = [];
 let wrongQueue = [];
-let questionCount = 0;
+let questionIndex = 0;
 
-const questions = {
+const allLevels = {
+
 1:[
-{q:"Was heißt 'Hei'?",a:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
-{q:"Was heißt 'Takk'?",a:"Danke",options:["Hallo","Danke","Bitte","Nein"]},
-{q:"Was heißt 'Brød'?",a:"Brot",options:["Brot","Milch","Fisch","Käse"]},
-{q:"Was heißt 'Mor'?",a:"Mutter",options:["Vater","Mutter","Bruder","Schwester"]},
-{q:"Was heißt 'Vann'?",a:"Wasser",options:["Milch","Wasser","Saft","Tee"]}
+{q:"Hva betyr 'takk'?",a:"Danke",options:["Hallo","Danke","Bitte","Nein"]},
+{q:"Hva betyr 'hei'?",a:"Hallo",options:["Hallo","Danke","Bitte","Tschüss"]},
+{q:"Hva betyr 'brød'?",a:"Brot",options:["Milch","Brot","Käse","Fisch"]},
+{q:"Hva betyr 'mor'?",a:"Mutter",options:["Vater","Mutter","Bruder","Schwester"]},
+{q:"Hva betyr 'katt'?",a:"Katze",options:["Hund","Katze","Vogel","Maus"]}
 ],
 
 2:[
-{q:"Übersetze: Buenos días",a:"Guten Morgen",type:"text"},
-{q:"Was heißt 'Gracias'?",a:"Danke",options:["Bitte","Danke","Hallo","Nein"]},
-{q:"Übersetze: Yo hablé",a:"Ich sprach",type:"text"},
-{q:"Was heißt 'Rojo'?",a:"Rot",options:["Rot","Blau","Grün","Gelb"]},
-{q:"Was heißt 'Zapatos'?",a:"Schuhe",options:["Hemd","Schuhe","Hose","Jacke"]}
+{q:"Was heißt 'rojo'?",a:"rot",options:["rot","blau","grün","gelb"]},
+{q:"Was heißt 'azul'?",a:"blau",options:["rot","blau","weiß","schwarz"]},
+{q:"Was heißt 'camisa'?",a:"Hemd",options:["Hemd","Hose","Schuhe","Jacke"]},
+{q:"Was heißt 'zapatos'?",a:"Schuhe",options:["Schuhe","Hut","Tasche","Rock"]},
+{q:"Was heißt 'verde'?",a:"grün",options:["rot","grün","pink","grau"]}
 ],
 
 3:[
-{q:"Was heißt 'Apple'?",a:"Apfel",options:["Apfel","Birne","Banane","Traube"]},
-{q:"Übersetze: I went",a:"Ich ging",type:"text"},
-{q:"Was heißt 'Teacher'?",a:"Lehrer",options:["Arzt","Lehrer","Schüler","Polizist"]},
-{q:"Was heißt 'Blue'?",a:"Blau",options:["Blau","Rot","Schwarz","Weiß"]},
-{q:"Was heißt 'Shirt'?",a:"Hemd",options:["Hemd","Hose","Kleid","Jacke"]}
+{q:"Past von 'viajar' (yo)?",a:"viajé",options:["viajé","viajaste","viajó","viajaron"]},
+{q:"Past von 'comer' (nosotros)?",a:"comimos",options:["comimos","comí","comiste","comieron"]},
+{q:"Past von 'vivir' (ellos)?",a:"vivieron",options:["vivieron","viví","viviste","vivimos"]},
+{q:"Past von 'hablar' (tú)?",a:"hablaste",options:["hablé","hablaste","habló","hablaron"]},
+{q:"Past von 'probar' (él)?",a:"probó",options:["probé","probaste","probó","probaron"]}
+],
+
+4:[
+{q:"Übersetze: I have been learning English for 9 years",a:"Ich lerne seit 9 Jahren Englisch"},
+{q:"Übersetze: She has already finished",a:"Sie hat schon fertig gemacht"},
+{q:"Übersetze: They were playing football",a:"Sie spielten Fußball"},
+{q:"Übersetze: We will travel tomorrow",a:"Wir werden morgen reisen"},
+{q:"Übersetze: It was raining",a:"Es hat geregnet"}
+],
+
+5:[
+{q:"Hva betyr 'sol'?",a:"Sonne"},
+{q:"Hva betyr 'vind'?",a:"Wind"},
+{q:"Hva betyr 'regner'?",a:"Es regnet"},
+{q:"Hva betyr 'høst'?",a:"Herbst"},
+{q:"Hva betyr 'vinter'?",a:"Winter"}
+],
+
+6:[
+{q:"Was heißt 'negro'?",a:"schwarz"},
+{q:"Was heißt 'blanco'?",a:"weiß"},
+{q:"Was heißt 'falda'?",a:"Rock"},
+{q:"Was heißt 'abrigo'?",a:"Mantel"},
+{q:"Was heißt 'sombrero'?",a:"Hut"}
+],
+
+7:[
+{q:"Past von 'tener' (yo)?",a:"tuve"},
+{q:"Past von 'ir' (él)?",a:"fue"},
+{q:"Past von 'hacer' (nosotros)?",a:"hicimos"},
+{q:"Past von 'decir' (ellos)?",a:"dijeron"},
+{q:"Past von 'venir' (tú)?",a:"viniste"}
+],
+
+8:[
+{q:"Übersetze: I have already eaten",a:"Ich habe schon gegessen"},
+{q:"Übersetze: We were watching a movie",a:"Wir haben einen Film geschaut"},
+{q:"Übersetze: She has lived here for 5 years",a:"Sie lebt seit 5 Jahren hier"},
+{q:"Übersetze: They have finished",a:"Sie haben beendet"},
+{q:"Übersetze: I will study tomorrow",a:"Ich werde morgen lernen"}
+],
+
+9:[
+{q:"Hva betyr 'bestevenn'?",a:"Bester Freund"},
+{q:"Hva betyr 'språk'?",a:"Sprache"},
+{q:"Hva betyr 'lett'?",a:"leicht"},
+{q:"Hva betyr 'fort'?",a:"schnell"},
+{q:"Hva betyr 'bord'?",a:"Tisch"}
+],
+
+10:[
+{q:"Was heißt 'morada'?",a:"lila"},
+{q:"Was heißt 'pantalones'?",a:"Hose"},
+{q:"Was heißt 'gris'?",a:"grau"},
+{q:"Was heißt 'chaqueta'?",a:"Jacke"},
+{q:"Was heißt 'naranja'?",a:"orange"}
 ]
+
 };
 
-// bis Level 10 automatisch kopieren
-for(let i=4;i<=10;i++){
-    questions[i]=questions[1];
+function renderLevels(){
+let container = document.getElementById("levels");
+container.innerHTML="";
+for(let i=1;i<=10;i++){
+let div=document.createElement("div");
+div.classList.add("level");
+if(i<=unlockedLevel){
+div.classList.add("unlocked");
+div.innerText="Level "+i;
+div.onclick=()=>startLevel(i);
+}else{
+div.classList.add("locked");
+div.innerText="🔒 Level "+i;
 }
-
-function renderMenu(){
-    document.getElementById("lesson").style.display="none";
-    document.getElementById("menu").style.display="block";
-    let html="";
-    for(let i=1;i<=10;i++){
-        if(i<=unlocked){
-            html+=`<div class="level" onclick="startLevel(${i})">Level ${i}</div>`;
-        }else{
-            html+=`<div class="level locked">Level ${i}</div>`;
-        }
-    }
-    document.getElementById("menu").innerHTML=html;
+container.appendChild(div);
+}
 }
 
 function startLevel(lvl){
-    currentLevel=lvl;
-    queue=[...questions[lvl]];
-    wrongQueue=[];
-    questionCount=0;
-    document.getElementById("menu").style.display="none";
-    document.getElementById("lesson").style.display="block";
-    nextQuestion();
+currentQuestions=[...allLevels[lvl]];
+wrongQueue=[];
+questionIndex=0;
+document.getElementById("menu").style.display="none";
+document.getElementById("lesson").style.display="block";
+nextQuestion(lvl);
 }
 
-function nextQuestion(){
-    if(questionCount>=5){
-        if(wrongQueue.length>0){
-            queue=[...wrongQueue];
-            wrongQueue=[];
-            questionCount=0;
-        }else{
-            finishLevel();
-            return;
-        }
-    }
-
-    let q=queue.shift();
-    questionCount++;
-
-    let html=`<div class="card"><h3>${q.q}</h3>`;
-
-    if(q.type==="text"){
-        html+=`<input id="answer"><br><br>
-        <button onclick="checkText('${q.a}')">OK</button>`;
-    }else{
-        q.options.forEach(opt=>{
-            html+=`<button onclick="checkOption('${opt}','${q.a}')">${opt}</button><br>`;
-        });
-    }
-
-    html+=`<br><button class="back" onclick="renderMenu()">Zurück</button></div>`;
-
-    document.getElementById("lesson").innerHTML=html;
+function nextQuestion(lvl){
+if(questionIndex>=5){
+if(wrongQueue.length>0){
+currentQuestions.push(...wrongQueue);
+wrongQueue=[];
+}else{
+if(lvl===unlockedLevel && unlockedLevel<10){
+unlockedLevel++;
+localStorage.setItem("unlockedLevel",unlockedLevel);
+}
+document.getElementById("lesson").innerHTML=
+`<div class="card">
+<h2>🎉 Level geschafft!</h2>
+<button onclick="goHome()">Zurück zum Menü</button>
+</div>`;
+return;
+}
+}
+let q=currentQuestions.shift();
+questionIndex++;
+renderQuestion(q,lvl);
 }
 
-function checkOption(choice,correct){
-    if(choice!==correct){
-        wrongQueue.push({q:document.querySelector("h3").innerText,a:correct,options:[correct]});
-    }
-    nextQuestion();
+function renderQuestion(q,lvl){
+let html=`<div class="card"><h3>${q.q}</h3>`;
+if(q.options){
+q.options.forEach(opt=>{
+html+=`<button onclick="checkAnswer('${opt}','${q.a}',${lvl})">${opt}</button>`;
+});
+}else{
+html+=`<input id="textAnswer" style="padding:10px;border-radius:10px;border:1px solid #ccc;">
+<br><button onclick="checkText('${q.a}',${lvl})">Check</button>`;
+}
+html+="</div>";
+document.getElementById("lesson").innerHTML=html;
 }
 
-function checkText(correct){
-    let input=document.getElementById("answer").value.trim();
-    if(input.toLowerCase()!==correct.toLowerCase()){
-        wrongQueue.push({q:document.querySelector("h3").innerText,a:correct,type:"text"});
-    }
-    nextQuestion();
+function checkAnswer(ans,correct,lvl){
+if(ans===correct){
+nextQuestion(lvl);
+}else{
+wrongQueue.push({q:document.querySelector("h3").innerText,a:correct});
+nextQuestion(lvl);
+}
 }
 
-function finishLevel(){
-    if(currentLevel===unlocked && unlocked<10){
-        unlocked++;
-        localStorage.setItem("unlocked",unlocked);
-    }
-
-    document.getElementById("lesson").innerHTML=
-    `<div class="card">
-    <h2>🎉 Level geschafft!</h2>
-    <button onclick="renderMenu()">Zurück zum Menü</button>
-    </div>`;
+function checkText(correct,lvl){
+let val=document.getElementById("textAnswer").value.trim();
+if(val.toLowerCase()===correct.toLowerCase()){
+nextQuestion(lvl);
+}else{
+wrongQueue.push({q:document.querySelector("h3").innerText,a:correct});
+nextQuestion(lvl);
+}
 }
 
-renderMenu();
+function goHome(){
+document.getElementById("lesson").style.display="none";
+document.getElementById("menu").style.display="block";
+renderLevels();
+}
+
+renderLevels();
 
 </script>
+
 </body>
 </html>
